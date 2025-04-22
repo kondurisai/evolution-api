@@ -121,6 +121,7 @@ import makeWASocket, {
   WAMessageUpdate,
   WAPresence,
   WASocket,
+  generateThumbnail,
 } from 'baileys';
 import { Label } from 'baileys/lib/Types/Label';
 import { LabelAssociation } from 'baileys/lib/Types/LabelAssociation';
@@ -2654,9 +2655,15 @@ export class BaileysStartupService extends ChannelStartupService {
       prepareMedia[mediaType].fileName = mediaMessage.fileName;
 
       if (mediaMessage.mediatype === 'video') {
-        prepareMedia[mediaType].jpegThumbnail = Uint8Array.from(
-          readFileSync(join(process.cwd(), 'public', 'images', 'video-cover.png')),
-        );
+        // prepareMedia[mediaType].jpegThumbnail = Uint8Array.from(
+        //   readFileSync(join(process.cwd(), 'public', 'images', 'video-cover.png')),
+        // );
+        
+        //we have issue where we could find preview of the video thumnail properly ,it used to be in gray box or media file in iphone , so we have done below chnages to load the preview properly
+        //fix is we are genearting the thumbnail of the video and sending it as a preview to body of the api 
+        const options = {};
+        prepareMedia[mediaType].jpegThumbnail = (await generateThumbnail(mediaMessage.media, mediaMessage.mediatype, options)).thumbnail;
+       
         prepareMedia[mediaType].gifPlayback = false;
       }
 
