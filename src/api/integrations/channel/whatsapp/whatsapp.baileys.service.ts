@@ -2000,6 +2000,15 @@ export class BaileysStartupService extends ChannelStartupService {
         option as unknown as MiscMessageGenerationOptions,
       );
     }
+    //added by aditya to avoid forward message error, so if message is media type then send it as media message without forward
+    //if this block is not added then it will execute 2013 line and waiting message error will be thrown
+     if (message['media']) {
+     return await this.client.sendMessage(
+      sender,
+      message as unknown as AnyMessageContent,
+      option as unknown as MiscMessageGenerationOptions,
+    );
+  }
 
     if (!message['audio'] && !message['poll'] && !message['sticker'] && sender != 'status@broadcast') {
       return await this.client.sendMessage(
@@ -2014,6 +2023,7 @@ export class BaileysStartupService extends ChannelStartupService {
         option as unknown as MiscMessageGenerationOptions,
       );
     }
+
 
     if (sender === 'status@broadcast') {
       let jidList;
