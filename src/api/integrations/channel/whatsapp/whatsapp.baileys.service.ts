@@ -2002,7 +2002,7 @@ export class BaileysStartupService extends ChannelStartupService {
     }
     //added by aditya to avoid forward message error, so if message is media type then send it as media message without forward
     //if this block is not added then it will execute 2013 line and waiting message error will be thrown
-     if (message['media']) {
+     if (message['imageMessage'] || message['videoMessage']) {
      return await this.client.sendMessage(
       sender,
       message as unknown as AnyMessageContent,
