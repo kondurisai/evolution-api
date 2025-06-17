@@ -2795,7 +2795,7 @@ export class BaileysStartupService extends ChannelStartupService {
     const mediaData: SendMediaDto = { ...data };
 
     if (file) mediaData.media = file.buffer.toString('base64');
-        var messageSent: WAMessage={};
+        let messageSent: WAMessage;
 
   if(process.env?.IS_SEND_MESSAGE === 'false'){
     this.logger.log("Sending message with evoultion data prepartion and send message")
