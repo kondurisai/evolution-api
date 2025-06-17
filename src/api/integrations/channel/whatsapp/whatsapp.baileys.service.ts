@@ -2002,13 +2002,41 @@ export class BaileysStartupService extends ChannelStartupService {
     }
     //added by aditya to avoid forward message error, so if message is media type then send it as media message without forward
     //if this block is not added then it will execute 2013 line and waiting message error will be thrown
-     if (message['imageMessage'] || message['videoMessage']) {
-     return await this.client.sendMessage(
-      sender,
-      message as unknown as AnyMessageContent,
-      option as unknown as MiscMessageGenerationOptions,
-    );
-  }
+
+    //if we use below code to skip forward messsage waiting for meesgae issue is coming , aditya
+    if (message['imageMessage']) {
+      console.log("Message is in image message condition ");
+      let media = message;
+      return await this.client.sendMessage(
+        sender,
+        {
+          image: {
+            url: message.imageMessage.url,//in prepara media , we need too send the url for sending in this 
+          },
+          caption: message.imageMessage.caption,
+          jpegThumbnail: message.imageMessage.jpegThumbnail,
+          mimetype: media.imageMessage.mimetype
+        },
+        option as MiscMessageGenerationOptions
+      )
+    }
+
+    if (message['videoMessage']) {
+      console.log("Message is in video message condition ");
+      let media = message;
+      return await this.client.sendMessage(
+        sender,
+        {
+          video: {
+            url: message.videoMessage.url,
+          },
+          caption: message.videoMessage.caption,
+          jpegThumbnail: message.videoMessage.jpegThumbnail,
+          mimetype: media.videoMessage.mimetype
+        },
+        option as MiscMessageGenerationOptions
+      )
+    }
 
     if (!message['audio'] && !message['poll'] && !message['sticker'] && sender != 'status@broadcast') {
       return await this.client.sendMessage(
@@ -2621,7 +2649,13 @@ export class BaileysStartupService extends ChannelStartupService {
           }
 
           const response = await axios.get(mediaMessage.media, config);
+           //aditya chnaged this because what.msg encrypted url is unable to send the message with sendmessage method , it sedning message with empty video so for that iin prepare message we kept media url directly instead whatsapp url
 
+          const mediaBuffer = Buffer.from(mediaMessage.media, 'base64');
+            if (!mediaBuffer || mediaBuffer.length === 0) {
+              throw new Error('Invalid media buffer');
+            }
+             prepareMedia[mediaType].url= mediaBuffer;
           mimetype = response.headers['content-type'];
         }
       }
@@ -2663,8 +2697,11 @@ export class BaileysStartupService extends ChannelStartupService {
       prepareMedia[mediaType].caption = mediaMessage?.caption;
       prepareMedia[mediaType].mimetype = mimetype;
       prepareMedia[mediaType].fileName = mediaMessage.fileName;
+      
+      // prepareMedia[mediaType].url=-mediaMessage.media;//aditya chnaged this because what.msg encrypted url is unable to send the message with sendmessage method , it sedning message with empty video so for that iin prepare message we kept media url directly instead whatsapp url
 
       if (mediaMessage.mediatype === 'video') {
+
         // prepareMedia[mediaType].jpegThumbnail = Uint8Array.from(
         //   readFileSync(join(process.cwd(), 'public', 'images', 'video-cover.png')),
         // );
@@ -2758,10 +2795,12 @@ export class BaileysStartupService extends ChannelStartupService {
     const mediaData: SendMediaDto = { ...data };
 
     if (file) mediaData.media = file.buffer.toString('base64');
+        var messageSent: WAMessage={};
 
+  if(process.env?.IS_SEND_MESSAGE === 'false'){
+    this.logger.log("Sending message with evoultion data prepartion and send message")
     const generate = await this.prepareMediaMessage(mediaData);
-
-    const mediaSent = await this.sendMessageWithTyping(
+   const  messageSent = await this.sendMessageWithTyping(
       data.number,
       { ...generate.message },
       {
@@ -2773,8 +2812,48 @@ export class BaileysStartupService extends ChannelStartupService {
       },
       isIntegration,
     );
+    return messageSent;
+  }
+      this.logger.log("Sending message with Bailey send message")
 
-    return mediaSent;
+    //below code added by aditya , to fix waiting for message issue , using 
+    const isWA = (await this.whatsappNumber({ numbers: [data.number] }))?.shift();
+
+    if (!isWA.exists && !isJidGroup(isWA.jid) && !isWA.jid.includes('@broadcast')) {
+      throw new BadRequestException(isWA);
+    }
+
+    const sender = isWA.jid.toLowerCase();
+    // let messageSent: WAMessage;
+
+    if (mediaData.mediatype === 'image') {
+      this.logger.log("Image messaage received , sending");
+      messageSent = await this.client.sendMessage(sender, {
+        image: { url: mediaData.media }, // for image; use video or document for others
+        caption: mediaData?.caption,
+        mimetype: mediaData?.mimetype,
+      }, undefined);
+    }
+
+    if (mediaData.mediatype === 'video') {
+        this.logger.log("Video messaage received , sending");
+      messageSent = await this.client.sendMessage(sender, {
+        video: { url: mediaData.media }, // for image; use video or document for others
+        caption: mediaData?.caption,
+        mimetype: mediaData?.mimetype,
+      }, undefined);
+    }
+
+    if (Long.isLong(messageSent?.messageTimestamp)) {
+      messageSent.messageTimestamp = messageSent.messageTimestamp?.toNumber();
+    }
+
+    const messageRaw = await this.prepareMessage(messageSent);
+
+    this.logger.log("prepared message after sending "+messageRaw);
+
+    await this.sendDataWebhook(Events.SEND_MESSAGE, messageRaw);
+    return messageSent;
   }
 
   public async ptvMessage(data: SendPtvDto, file?: any, isIntegration = false) {
