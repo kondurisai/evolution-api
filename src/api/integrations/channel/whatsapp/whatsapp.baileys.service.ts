@@ -2655,7 +2655,6 @@ export class BaileysStartupService extends ChannelStartupService {
             if (!mediaBuffer || mediaBuffer.length === 0) {
               throw new Error('Invalid media buffer');
             }
-             prepareMedia[mediaType].url= mediaBuffer;
           mimetype = response.headers['content-type'];
         }
       }
@@ -2697,14 +2696,7 @@ export class BaileysStartupService extends ChannelStartupService {
       prepareMedia[mediaType].caption = mediaMessage?.caption;
       prepareMedia[mediaType].mimetype = mimetype;
       prepareMedia[mediaType].fileName = mediaMessage.fileName;
-           //aditya chnaged this because what.msg encrypted url is unable to send the message with sendmessage method , it sedning message with empty video so for that iin prepare message we kept media url directly instead whatsapp url
-
-      const mediaBuffer = Buffer.from(mediaMessage.media, 'base64');
-        if (!mediaBuffer || mediaBuffer.length === 0) {
-              throw new Error('Invalid media buffer');
-         }
-             prepareMedia[mediaType].url= mediaBuffer;
-      // prepareMedia[mediaType].url=-mediaMessage.media;//aditya chnaged this because what.msg encrypted url is unable to send the message with sendmessage method , it sedning message with empty video so for that iin prepare message we kept media url directly instead whatsapp url
+       prepareMedia[mediaType].url= mediaMessage.media;           //aditya chnaged this because what.msg encrypted url is unable to send the message with sendmessage method , it sedning message with empty video so for that iin prepare message we kept media url directly instead whatsapp url
 
       if (mediaMessage.mediatype === 'video') {
 
