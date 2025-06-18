@@ -2848,11 +2848,11 @@ export class BaileysStartupService extends ChannelStartupService {
       messageSent.messageTimestamp = messageSent.messageTimestamp?.toNumber();
     }
 
-    const messageRaw = await this.prepareMessage(messageSent);
+    // const messageRaw = await this.prepareMessage(messageSent);
 
-    this.logger.log("prepared message after sending "+messageRaw);
+    // this.logger.log("prepared message after sending "+messageRaw);
 
-    await this.sendDataWebhook(Events.SEND_MESSAGE, messageRaw);
+    // await this.sendDataWebhook(Events.SEND_MESSAGE, messageRaw);
     return messageSent;
   }
 
