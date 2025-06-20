@@ -1651,6 +1651,7 @@ export class BaileysStartupService extends ChannelStartupService {
   };
 
   private eventHandler() {
+   
     this.client.ev.process(async (events) => {
       if (!this.endSession) {
         const database = this.configService.get<Database>('DATABASE');
@@ -1672,6 +1673,9 @@ export class BaileysStartupService extends ChannelStartupService {
               messages: [msg],
               type: 'notify',
             });
+              console.log(` 📊 messages.upsert listener count AFTER:`, this.client.ev.listenerCount("messages.upsert"));
+              console.log(` 📊 message is `, msg);
+
           }
 
           this.sendDataWebhook(Events.CALL, call);
@@ -2222,6 +2226,7 @@ export class BaileysStartupService extends ChannelStartupService {
             return jid;
           });
         }
+       this.logger.log(`💥JID Group About to send message to ${sender} — Payload: ${message}`);
 
         messageSent = await this.sendMessage(
           sender,
@@ -2234,7 +2239,10 @@ export class BaileysStartupService extends ChannelStartupService {
           // group?.participants,
         );
       } else {
+       this.logger.log(`💥 About to send message to ${sender} — Payload: ${message}`);
         messageSent = await this.sendMessage(sender, message, mentions, linkPreview, quoted);
+            this.logger.log(`💥 Sent message to ${sender}`);
+
       }
 
       if (Long.isLong(messageSent?.messageTimestamp)) {
